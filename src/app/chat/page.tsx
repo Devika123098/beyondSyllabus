@@ -78,6 +78,7 @@ function ChatComponent() {
       const result = await chatWithSyllabus({ history: chatHistory, message: input });
       const assistantMessage: Message = { role: 'assistant', content: result.response };
       setMessages(msgs => [...msgs, assistantMessage]);
+      setSuggestions(result.suggestions || []);
 
     } catch (e: any) {
       console.error("Error getting AI response:", e);
