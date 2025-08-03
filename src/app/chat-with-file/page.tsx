@@ -23,6 +23,7 @@ export default function ChatWithFilePage() {
     const [error, setError] = useState<string | null>(null);
     const [isAwaitingAi, setIsAwaitingAi] = useState(false);
     const [chatTitle, setChatTitle] = useState<string>("AI Assistant");
+    const [suggestions, setSuggestions] = useState<string[]>([]);
 
     const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -39,6 +40,7 @@ export default function ChatWithFilePage() {
         setError(null);
         setIsAwaitingAi(true);
         setMessages([]);
+        setSuggestions([]);
 
         // Extract title from markdown
         const lines = markdown.split('\n');
@@ -61,6 +63,7 @@ export default function ChatWithFilePage() {
                     content: result.introductoryMessage
                 }
             ]);
+            setSuggestions(result.suggestions);
         } catch (e: any) {
              setError("Failed to generate an introduction for the provided content. Please try again.");
         } finally {
@@ -68,14 +71,22 @@ export default function ChatWithFilePage() {
             setIsAwaitingAi(false);
         }
     };
+    
+    const handleSuggestionClick = (suggestion: string) => {
+        setInput(suggestion);
+        // We need a small delay to allow the state to update before sending
+        setTimeout(() => {
+          document.getElementById('chat-submit-button')?.click();
+        }, 50);
+      };
 
     const handleSend = async () => {
         if (!input.trim() || isAwaitingAi) return;
-
+        setSuggestions([]); // Clear suggestions on new message
         const userMessage: Message = { role: 'user', content: input };
         const currentMessages = [...messages, userMessage];
         setMessages(currentMessages);
-setInput("");
+        setInput("");
         setLoading(true);
         setIsAwaitingAi(true);
         setError(null);
@@ -190,6 +201,15 @@ setInput("");
                                 )}
                                 <div ref={chatEndRef} />
                                </div>
+                                {suggestions.length > 0 && !loading && (
+                                <div className="flex flex-wrap gap-2 mt-4 justify-center">
+                                    {suggestions.map((s, i) => (
+                                    <Button key={i} variant="outline" size="sm" onClick={() => handleSuggestionClick(s)}>
+                                        {s}
+                                    </Button>
+                                    ))}
+                                </div>
+                                )}
                             </CardContent>
                             <div className="p-4 border-t bg-card/40">
                                 <form
@@ -197,6 +217,7 @@ setInput("");
                                     className="flex gap-2"
                                 >
                                     <input
+                                        id="chat-input-field"
                                         className="flex-1 bg-background border border-border rounded-lg px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-primary"
                                         value={input}
                                         onChange={(e) => setInput(e.target.value)}
@@ -204,7 +225,7 @@ setInput("");
                                         disabled={loading || messages.length === 0}
                                         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
                                     />
-                                    <Button type="submit" size="icon" disabled={loading || !input.trim()}>
+                                    <Button id="chat-submit-button" type="submit" size="icon" disabled={loading || !input.trim()}>
                                         <Send className="h-5 w-5" />
                                     </Button>
                                 </form>

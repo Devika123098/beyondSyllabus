@@ -22,6 +22,8 @@ function ChatComponent() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -42,6 +44,7 @@ function ChatComponent() {
               content: result.introductoryMessage,
             },
           ]);
+          setSuggestions(result.suggestions);
         })
         .catch(() => setError("Failed to generate initial tasks and applications."))
         .finally(() => setLoading(false));
@@ -51,10 +54,18 @@ function ChatComponent() {
   useEffect(() => {
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 100);
   }, [messages, loading]);
+  
+  const handleSuggestionClick = (suggestion: string) => {
+    setInput(suggestion);
+    // We need a small delay to allow the state to update before sending
+    setTimeout(() => {
+      document.getElementById('chat-submit-button')?.click();
+    }, 50);
+  };
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
-
+    setSuggestions([]); // Clear suggestions on new message
     const userMessage: Message = { role: 'user', content: input };
     const currentMessages: Message[] = [...messages, userMessage];
     setMessages(currentMessages);
@@ -145,6 +156,15 @@ function ChatComponent() {
           <div ref={chatEndRef} />
         </div>
         <div className="mt-4 sticky bottom-4">
+        {suggestions.length > 0 && !loading && (
+            <div className="flex flex-wrap gap-2 mb-2 justify-center">
+              {suggestions.map((s, i) => (
+                <Button key={i} variant="outline" size="sm" onClick={() => handleSuggestionClick(s)}>
+                  {s}
+                </Button>
+              ))}
+            </div>
+          )}
           <form
             onSubmit={(e) => { e.preventDefault(); handleSend(); }}
             className="flex gap-2 w-full bg-card/90 backdrop-blur-xl p-2 rounded-2xl shadow-lg border"
@@ -158,6 +178,7 @@ function ChatComponent() {
               onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }}}
             />
             <Button
+              id="chat-submit-button"
               type="submit"
               size="icon"
               disabled={loading || !input.trim()}
