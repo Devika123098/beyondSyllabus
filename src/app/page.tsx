@@ -24,7 +24,7 @@ export default function Home() {
               <div className="flex flex-col justify-center space-y-6">
                 <div className="space-y-4">
                   <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none bg-clip-text text-transparent bg-gradient-to-r from-primary to-accent">
-                    Welcome to WikiSyllabus
+                    Welcome to BeyondSyllabus
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
                     Your modern, AI-powered guide to the university curriculum.
