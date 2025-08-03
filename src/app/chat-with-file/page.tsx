@@ -3,20 +3,17 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Sparkles, Wand2, Send } from "lucide-react";
+import { Loader2, Sparkles, Wand2, Send, BrainCircuit, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { generateModuleTasks, GenerateModuleTasksOutput } from "@/ai/flows/generate-module-tasks";
-import { chatWithSyllabus } from "@/ai/flows/chat-with-syllabus";
+import { chatWithSyllabus, Message } from "@/ai/flows/chat-with-syllabus";
 import { Header } from "@/components/common/Header";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
-
-interface Message {
-    role: 'user' | 'assistant' | 'system';
-    content: string;
-}
 
 export default function ChatWithFilePage() {
     const [markdown, setMarkdown] = useState("");
@@ -43,7 +40,7 @@ export default function ChatWithFilePage() {
         setMessages([]);
 
         try {
-            const result: GenerateModuleTasksOutput = await generateModuleTasks({ moduleContent: markdown });
+            const result = await generateModuleTasks({ moduleContent: markdown });
             setMessages([
                 {
                     role: "system",
@@ -51,15 +48,11 @@ export default function ChatWithFilePage() {
                 },
                 {
                     role: "assistant",
-                    content: `📝 **Learning Tasks:**\n${result.tasks.map((t, i) => `${i + 1}. ${t}`).join("\n")}`
-                },
-                {
-                    role: "assistant",
-                    content: `🌍 **Real-world Applications:**\n${result.realWorldApplications}`
+                    content: result.introductoryMessage
                 }
             ]);
-        } catch (e) {
-            setError("Failed to generate tasks and applications from the provided content.");
+        } catch (e: any) {
+            setError(e.message || "Failed to generate tasks and applications from the provided content.");
         } finally {
             setLoading(false);
             setIsAwaitingAi(false);
@@ -70,14 +63,15 @@ export default function ChatWithFilePage() {
         if (!input.trim() || isAwaitingAi) return;
 
         const userMessage: Message = { role: 'user', content: input };
-        setMessages(prev => [...prev, userMessage]);
+        const currentMessages = [...messages, userMessage];
+        setMessages(currentMessages);
         setInput("");
         setLoading(true);
         setIsAwaitingAi(true);
         setError(null);
         
         try {
-            const chatHistory = messages.filter(m => m.role !== 'system');
+            const chatHistory = currentMessages.filter((m): m is { role: 'user' | 'assistant', content: string } => m.role !== 'system');
             const result = await chatWithSyllabus({ history: chatHistory, message: input });
             const assistantMessage: Message = { role: 'assistant', content: result.response };
             setMessages(msgs => [...msgs, assistantMessage]);
@@ -92,7 +86,7 @@ export default function ChatWithFilePage() {
     };
 
     return (
-        <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-950">
+        <div className="flex flex-col min-h-screen bg-muted/30 dark:bg-background">
             <Header />
             <main className="flex-1 container mx-auto px-4 py-8">
                 <motion.div 
@@ -108,7 +102,7 @@ export default function ChatWithFilePage() {
                 </motion.div>
 
                 <div className="grid lg:grid-cols-2 gap-8 items-start">
-                    <Card className="shadow-lg rounded-2xl bg-card/80 backdrop-blur-sm">
+                    <Card className="shadow-lg rounded-2xl bg-card/80 backdrop-blur-sm border">
                         <CardContent className="p-6 space-y-4">
                             <h2 className="text-xl font-semibold">Your Content</h2>
                             <Textarea
@@ -119,15 +113,15 @@ export default function ChatWithFilePage() {
                                 className="w-full text-base rounded-xl focus-visible:ring-primary bg-background/70"
                                 disabled={isAwaitingAi}
                             />
-                            <Button onClick={handleGenerateTasks} disabled={loading || !markdown.trim()} className="w-full text-lg py-6">
-                                {isAwaitingAi && loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Wand2 className="mr-2 h-5 w-5" />}
+                            <Button onClick={handleGenerateTasks} disabled={loading || !markdown.trim()} className="w-full text-lg py-6 group">
+                                {isAwaitingAi && loading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : <Wand2 className="mr-2 h-5 w-5 group-hover:rotate-12 transition-transform" />}
                                 Generate Insights
                             </Button>
                         </CardContent>
                     </Card>
 
                     <div className="flex flex-col h-full">
-                        <Card className="flex-1 flex flex-col shadow-lg rounded-2xl h-[650px] bg-card/80 backdrop-blur-sm">
+                        <Card className="flex-1 flex flex-col shadow-lg rounded-2xl h-[650px] bg-card/80 backdrop-blur-sm border">
                             <CardContent className="flex-1 flex flex-col overflow-hidden p-4">
                                <h2 className="text-xl font-semibold mb-4 text-center">AI Assistant</h2>
                                <div className="flex-1 overflow-y-auto pr-2 space-y-6">
@@ -140,38 +134,54 @@ export default function ChatWithFilePage() {
                                          </AlertDescription>
                                      </Alert>
                                 )}
+                                 {error && (
+                                    <Alert variant="destructive">
+                                        <BrainCircuit className="h-4 w-4" />
+                                        <AlertTitle>Error</AlertTitle>
+                                        <AlertDescription>
+                                            {error}
+                                        </AlertDescription>
+                                    </Alert>
+                                )}
                                 {messages.filter(m => m.role !== 'system').map((msg, idx) => (
                                      <motion.div
                                         key={idx}
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.3 }}
-                                        className={`flex items-start gap-3 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                                      {msg.role === 'assistant' && <Avatar className="w-8 h-8"><AvatarFallback>AI</AvatarFallback></Avatar>}
+                                        className={`flex items-start gap-3 w-full ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                                      {msg.role === 'assistant' && (
+                                        <Avatar className="w-8 h-8 border">
+                                            <AvatarFallback className="bg-primary/10"><Sparkles className="h-4 w-4 text-primary" /></AvatarFallback>
+                                        </Avatar>
+                                      )}
                                       <div
-                                        className={`max-w-xs md:max-w-md rounded-2xl px-4 py-3 text-base whitespace-pre-wrap shadow-md ${msg.role === 'user'
+                                        className={`max-w-md md:max-w-lg rounded-2xl px-4 py-3 text-base shadow-md prose prose-sm dark:prose-invert prose-headings:font-semibold prose-p:my-2 prose-ul:my-2 prose-li:my-0.5 ${msg.role === 'user'
                                                 ? 'bg-primary text-primary-foreground rounded-br-none'
-                                                : 'bg-background text-foreground rounded-bl-none'
+                                                : 'bg-card text-card-foreground rounded-bl-none border'
                                             }`}
                                       >
-                                        {msg.content}
+                                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
                                       </div>
-                                      {msg.role === 'user' && <Avatar className="w-8 h-8"><AvatarFallback>You</AvatarFallback></Avatar>}
+                                      {msg.role === 'user' && (
+                                        <Avatar className="w-8 h-8">
+                                            <AvatarFallback><User className="h-4 w-4"/></AvatarFallback>
+                                        </Avatar>
+                                      )}
                                     </motion.div>
                                 ))}
-                                {loading && (
+                                {loading && !isAwaitingAi && (
                                     <div className="flex justify-start items-center gap-3">
-                                        <Avatar className="w-8 h-8"><AvatarFallback>AI</AvatarFallback></Avatar>
-                                        <div className="flex items-center gap-2 text-muted-foreground bg-background rounded-2xl px-4 py-3 shadow-md">
+                                        <Avatar className="w-8 h-8 border"><AvatarFallback  className="bg-primary/10"><Sparkles className="h-4 w-4 text-primary" /></AvatarFallback></Avatar>
+                                        <div className="flex items-center gap-2 text-muted-foreground bg-card rounded-2xl px-4 py-3 shadow-md border">
                                             <Loader2 className="h-5 w-5 animate-spin" /> AI is thinking...
                                         </div>
                                     </div>
                                 )}
-                                {error && <div className="text-center text-destructive py-4">{error}</div>}
                                 <div ref={chatEndRef} />
                                </div>
                             </CardContent>
-                            <div className="p-4 border-t">
+                            <div className="p-4 border-t bg-card/40">
                                 <form
                                     onSubmit={(e) => { e.preventDefault(); handleSend(); }}
                                     className="flex gap-2"
