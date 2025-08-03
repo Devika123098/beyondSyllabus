@@ -44,7 +44,7 @@ export function Footer() {
         </div>
         <div className="mt-8 border-t pt-6 text-center text-xs text-muted-foreground">
           <p>
-            {new Date().getFullYear()} WikiSyllabus. All rights reserved. An
+            {new Date().getFullYear()} BeyondSyllabus. All rights reserved. An
             open-source project.
           </p>
         </div>
