@@ -22,6 +22,7 @@ export default function ChatWithFilePage() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [isAwaitingAi, setIsAwaitingAi] = useState(false);
+    const [chatTitle, setChatTitle] = useState<string>("AI Assistant");
 
     const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -39,8 +40,17 @@ export default function ChatWithFilePage() {
         setIsAwaitingAi(true);
         setMessages([]);
 
+        // Extract title from markdown
+        const lines = markdown.split('\n');
+        const titleLine = lines.find(line => line.startsWith('#'));
+        const extractedTitle = titleLine ? titleLine.replace(/#/g, '').trim() : "Pasted Content";
+        setChatTitle(extractedTitle);
+
         try {
-            const result = await generateModuleTasks({ moduleContent: markdown });
+            const result = await generateModuleTasks({ 
+                moduleContent: markdown, 
+                moduleTitle: extractedTitle 
+            });
             setMessages([
                 {
                     role: "system",
@@ -52,7 +62,7 @@ export default function ChatWithFilePage() {
                 }
             ]);
         } catch (e: any) {
-            setError(e.message || "Failed to generate tasks and applications from the provided content.");
+             setError("Failed to generate an introduction for the provided content. Please try again.");
         } finally {
             setLoading(false);
             setIsAwaitingAi(false);
@@ -65,7 +75,7 @@ export default function ChatWithFilePage() {
         const userMessage: Message = { role: 'user', content: input };
         const currentMessages = [...messages, userMessage];
         setMessages(currentMessages);
-        setInput("");
+setInput("");
         setLoading(true);
         setIsAwaitingAi(true);
         setError(null);
@@ -123,7 +133,7 @@ export default function ChatWithFilePage() {
                     <div className="flex flex-col h-full">
                         <Card className="flex-1 flex flex-col shadow-lg rounded-2xl h-[650px] bg-card/80 backdrop-blur-sm border">
                             <CardContent className="flex-1 flex flex-col overflow-hidden p-4">
-                               <h2 className="text-xl font-semibold mb-4 text-center">AI Assistant</h2>
+                               <h2 className="text-xl font-semibold mb-4 text-center truncate">{chatTitle}</h2>
                                <div className="flex-1 overflow-y-auto pr-2 space-y-6">
                                 {messages.filter(m => m.role !== 'system').length === 0 && !loading && (
                                      <Alert className="bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-500/30">
