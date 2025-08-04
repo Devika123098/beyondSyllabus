@@ -1,6 +1,6 @@
-import Link from 'next/link';
-import { Fragment } from 'react';
-import { ChevronRight } from 'lucide-react';
+import Link from "next/link";
+import { Fragment } from "react";
+import { ChevronRight } from "lucide-react";
 
 interface BreadcrumbItem {
   label: string;
@@ -19,11 +19,16 @@ export function Breadcrumbs({ items }: BreadcrumbsProps) {
           <Fragment key={item.label}>
             <li>
               {item.href ? (
-                <Link href={item.href} className="hover:text-primary transition-colors">
+                <Link
+                  href={item.href}
+                  className="hover:text-primary transition-colors"
+                >
                   {item.label}
                 </Link>
               ) : (
-                <span className="font-medium text-foreground">{item.label}</span>
+                <span className="font-medium text-foreground">
+                  {item.label}
+                </span>
               )}
             </li>
             {index < items.length - 1 && (

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { GraduationCap } from "lucide-react";
+import { Github, GraduationCap } from "lucide-react";
 
 export function Footer() {
   return (
@@ -17,6 +17,14 @@ export function Footer() {
             <p className="text-sm text-muted-foreground">
               Your AI-powered guide to the university curriculum.
             </p>
+            <a
+              href="https://github.com/The-Purple-Movement/WikiSyllabus"
+              target="_blank"
+              className="w-[100px] rounded-[10px] flex p-3 bg-black/20 hover:shadow-lg"
+            >
+              {" "}
+              <Github /> GitHub
+            </a>
           </div>
           <div>
             <h3 className="text-sm font-semibold mb-3">Navigation</h3>

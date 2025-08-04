@@ -20,18 +20,18 @@ export function Header() {
           {/* <Button asChild variant="ghost">
                     <Link href="/select">Select Course</Link>
                 </Button> */}
-          <Button asChild variant="ghost">
+          {/* <Button asChild variant="ghost">
             <Link href="/chat-with-file">
               <Sparkles className="mr-2 h-4 w-4" />
               Chat with Syllabus
             </Link>
-          </Button>
+          </Button> */}
         </div>
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <div className="md:hidden">
+          {/* <div className="md:hidden">
             <MobileNav />
-          </div>
+          </div> */}
         </div>
       </div>
     </header>
