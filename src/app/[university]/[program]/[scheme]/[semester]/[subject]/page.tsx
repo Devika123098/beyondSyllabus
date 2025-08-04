@@ -8,13 +8,13 @@ import { AnimatedDiv } from '@/components/common/AnimatedDiv';
 import { Footer } from '@/components/common/Footer';
 
 interface SubjectPageProps {
-  params: {
+  params: Promise<{
     university: string;
     program: string;
     scheme: string;
     semester: string;
     subject: string;
-  };
+  }>;
 }
 
 interface DirectoryStructure {
@@ -33,8 +33,14 @@ async function getDirectoryStructure(): Promise<DirectoryStructure> {
   return res.json();
 }
 
-function findDataPath(directoryStructure: DirectoryStructure, params: SubjectPageProps['params']): { university: any, program: any, scheme: any, semester: any, subject: any } | null {
-    const { university: universityId, program: programId, scheme: schemeId, semester: semesterId, subject: subjectId } = params;
+function findDataPath(directoryStructure: DirectoryStructure, resolvedParams: {
+    university: string;
+    program: string;
+    scheme: string;
+    semester: string;
+    subject: string;
+}): { university: any, program: any, scheme: any, semester: any, subject: any } | null {
+    const { university: universityId, program: programId, scheme: schemeId, semester: semesterId, subject: subjectId } = resolvedParams;
 
     const university = { id: universityId, name: capitalizeWords(universityId) };
     const universityData = directoryStructure[universityId];
@@ -73,6 +79,7 @@ function formatSemesterName(semesterId: string): string {
 
 
 export default async function SubjectPage({ params }: SubjectPageProps) {
+  const resolvedParams = await params;
   let directoryStructure: DirectoryStructure | null = null;
   let error: string | null = null;
 
@@ -88,7 +95,7 @@ export default async function SubjectPage({ params }: SubjectPageProps) {
   }
 
 
-  const dataPath = findDataPath(directoryStructure, params);
+  const dataPath = findDataPath(directoryStructure, resolvedParams);
 
   if (!dataPath) {
     notFound();
