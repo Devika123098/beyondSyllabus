@@ -10,6 +10,8 @@ import {
   User,
   BrainCircuit,
   PlusIcon,
+  Copy,
+  Check,
 } from "lucide-react";
 import { chatWithSyllabus, Message } from "@/ai/flows/chat-with-syllabus";
 import { generateModuleTasks } from "@/ai/flows/generate-module-tasks";
@@ -29,8 +31,20 @@ function ChatComponent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement>(null);
+
+  const copyToClipboard = async (text: string, messageIndex: number) => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedMessageIndex(messageIndex);
+      // Reset the copied state after 2 seconds
+      setTimeout(() => setCopiedMessageIndex(null), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
+  };
 
   useEffect(() => {
     if (moduleContent && moduleTitle !== "Loading title...") {
@@ -137,16 +151,33 @@ function ChatComponent() {
                     </Avatar>
                   )}
                   {msg.content ? (
-                    <div
-                      className={`max-w-md md:max-w-lg rounded-2xl px-4 py-3 text-base shadow-md prose prose-sm dark:prose-invert prose-headings:font-semibold prose-p:my-2 prose-ul:my-2 prose-li:my-0.5 ${
-                        msg.role === "user"
-                          ? "bg-primary text-primary-foreground rounded-br-none"
-                          : "bg-card text-card-foreground rounded-bl-none border"
-                      }`}
-                    >
-                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                        {msg.content}
-                      </ReactMarkdown>
+                    <div className="relative group max-w-md md:max-w-lg">
+                      <div
+                        className={`rounded-2xl px-4 py-3 text-base shadow-md prose prose-sm dark:prose-invert prose-headings:font-semibold prose-p:my-2 prose-ul:my-2 prose-li:my-0.5 ${
+                          msg.role === "user"
+                            ? "bg-primary text-primary-foreground rounded-br-none"
+                            : "bg-card text-card-foreground rounded-bl-none border"
+                        }`}
+                      >
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                          {msg.content}
+                        </ReactMarkdown>
+                      </div>
+                      {msg.role === "assistant" && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="absolute -bottom-2 -right-2 opacity-30 group-hover:opacity-100 hover:opacity-100 transition-opacity bg-background hover:bg-accent border shadow-sm h-8 w-8 p-0 z-10"
+                          onClick={() => copyToClipboard(msg.content, idx)}
+                          title="Copy response"
+                        >
+                          {copiedMessageIndex === idx ? (
+                            <Check className="h-4 w-4 text-green-600" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      )}
                     </div>
                   ) : (
                     <div className="flex items-center gap-2 text-muted-foreground bg-card rounded-2xl px-4 py-3 border shadow-md">
