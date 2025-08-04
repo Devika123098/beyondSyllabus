@@ -12,6 +12,12 @@ import {
   PlusIcon,
   Copy,
   Check,
+  MoreHorizontalIcon,
+  MoreVertical,
+  MoreVerticalIcon,
+  ThermometerIcon,
+  MenuIcon,
+  Menu,
 } from "lucide-react";
 import { chatWithSyllabus, Message } from "@/ai/flows/chat-with-syllabus";
 import { generateModuleTasks } from "@/ai/flows/generate-module-tasks";
@@ -31,7 +37,9 @@ function ChatComponent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(null);
+  const [copiedMessageIndex, setCopiedMessageIndex] = useState<number | null>(
+    null
+  );
 
   const chatEndRef = useRef<HTMLDivElement>(null);
 
@@ -42,7 +50,7 @@ function ChatComponent() {
       // Reset the copied state after 2 seconds
       setTimeout(() => setCopiedMessageIndex(null), 2000);
     } catch (err) {
-      console.error('Failed to copy text: ', err);
+      console.error("Failed to copy text: ", err);
     }
   };
 
@@ -216,17 +224,21 @@ function ChatComponent() {
         <div className="mt-4 md:w-full">
           {suggestions.length > 0 && !loading && (
             <div className="flex flex-wrap gap-2   mb-2 md:w-full">
+              <p className="flex">
+                <Menu />
+                Related
+              </p>
               {suggestions.map((s, i) => (
-                <div className="flex items-center w-full border-y-white border-y-[.8px] ">
+                <div className="flex items-center justify-between w-full  border-b-[.8px] ">
                   <Button
                     key={i}
-                    className="w-[350px] md:w-full text-wrap flex bg-transparent   hover:text-purple-800 hover:bg-transparent text-left md:h-[7vh] h-[10vh] text-[10px] md:text-[13px]  justify-start rounded"
+                    className="w-[350px] md:w-full text-wrap flex bg-transparent   hover:text-purple-600 hover:bg-transparent text-left md:h-[7vh] h-[10vh] text-[12px] md:text-[13px]  justify-start rounded"
                     size="sm"
                     onClick={() => handleSuggestionClick(s)}
                   >
                     {s}
                   </Button>
-                  <PlusIcon size={20} />
+                  <PlusIcon size={20} className="text-purple-500" />
                 </div>
               ))}
             </div>
@@ -236,10 +248,10 @@ function ChatComponent() {
               e.preventDefault();
               handleSend();
             }}
-            className="flex gap-2 w-full bg-card/90 backdrop-blur-xl p-2 rounded-2xl shadow-lg border"
+            className="flex gap-2 w-full p-2 rounded-[35px] shadow-lg border"
           >
             <input
-              className="flex-1 bg-transparent border-none rounded-lg px-3 py-2 text-base text-foreground placeholder:text-muted-foreground/80 focus:outline-none focus:ring-0 disabled:opacity-70"
+              className="flex-1 bg-transparent border-none rounded-lg px-3 py-2 text-base text-foreground placeholder:text-muted-foreground/80 focus:outline-none focus:ring-0 disabled:opacity-70 text-[.7rem]"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask the AI about this module..."
