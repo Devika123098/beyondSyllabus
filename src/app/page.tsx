@@ -1,3 +1,7 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -6,13 +10,35 @@ import {
   BarChart3,
   ChevronRight,
   Sparkles,
+  Loader2,
 } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
 import { Header } from "@/components/common/Header";
 import { Footer } from "@/components/common/Footer";
 
 export default function Home() {
+  const router = useRouter();
+  const [isNavigating, setIsNavigating] = useState(false);
+  const [isNavigatingToChat, setIsNavigatingToChat] = useState(false);
+
+  const handleExploreClick = async () => {
+    setIsNavigating(true);
+    
+    // Add aesthetic delay to show loading state
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
+    router.push("/select");
+  };
+
+  const handleChatClick = async () => {
+    setIsNavigatingToChat(true);
+    
+    // Add aesthetic delay to show loading state
+    await new Promise(resolve => setTimeout(resolve, 600));
+    
+    router.push("/chat-with-file");
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Header />
@@ -33,22 +59,48 @@ export default function Home() {
                   </p>
                 </div>
                 <div className="flex flex-col gap-4 min-[400px]:flex-row">
-                  <Button asChild size="lg" className="group shadow-lg">
-                    <Link href="/select">
-                      Explore Your Syllabus{" "}
-                      <ChevronRight className="h-5 w-5 ml-2 transition-transform group-hover:translate-x-1" />
-                    </Link>
+                  <Button 
+                    size="lg" 
+                    className="group shadow-lg relative overflow-hidden transition-all duration-300" 
+                    onClick={handleExploreClick}
+                    disabled={isNavigating}
+                  >
+                    {isNavigating ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                        Loading Syllabus...
+                      </>
+                    ) : (
+                      <>
+                        Explore Your Syllabus{" "}
+                        <ChevronRight className="h-5 w-5 ml-2 transition-transform group-hover:translate-x-1" />
+                      </>
+                    )}
+                    {isNavigating && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-primary/20 via-white/30 to-primary/20 animate-shimmer" />
+                    )}
                   </Button>
                   <Button
-                    asChild
                     size="lg"
                     variant="outline"
-                    className="group shadow-lg"
+                    className="group shadow-lg relative overflow-hidden transition-all duration-300"
+                    onClick={handleChatClick}
+                    disabled={isNavigatingToChat}
                   >
-                    <Link href="/chat-with-file">
-                      <Sparkles className="h-5 w-5 mr-2 text-amber-400" />
-                      AI Chat
-                    </Link>
+                    {isNavigatingToChat ? (
+                      <>
+                        <Loader2 className="h-5 w-5 mr-2 animate-spin text-amber-400" />
+                        Loading AI Chat...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-5 w-5 mr-2 text-amber-400" />
+                        AI Chat
+                      </>
+                    )}
+                    {isNavigatingToChat && (
+                      <div className="absolute inset-0 bg-gradient-to-r from-amber-400/10 via-white/20 to-amber-400/10 animate-shimmer" />
+                    )}
                   </Button>
                 </div>
               </div>
