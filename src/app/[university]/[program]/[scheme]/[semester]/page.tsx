@@ -1,21 +1,26 @@
+"use client";
+
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect, use } from 'react';
 import { Header } from '@/components/common/Header';
 import { Breadcrumbs } from '@/components/common/Breadcrumbs';
 import { Card, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowRight, BookText, Code, FlaskConical, Sigma } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { ArrowRight, BookText, Code, FlaskConical, Sigma, Loader2 } from 'lucide-react';
 import ErrorDisplay from '@/components/common/ErrorDisplay'; 
 import { AnimatedDiv } from '@/components/common/AnimatedDiv';
 import { Footer } from '@/components/common/Footer';
 
 interface SubjectsPageProps {
-  params: {
+  params: Promise<{
     university: string;
     program: string;
     scheme: string;
     semester: string;
-  };
+  }>;
 }
 
 interface DirectoryStructure {
@@ -34,8 +39,13 @@ async function getDirectoryStructure(): Promise<DirectoryStructure> {
   return res.json();
 }
 
-function findSemesterData(directoryStructure: DirectoryStructure, params: SubjectsPageProps['params']): { university: any, program: any, scheme: any, semester: any } | null {
-    const { university: universityId, program: programId, scheme: schemeId, semester: semesterId } = params;
+function findSemesterData(directoryStructure: DirectoryStructure, resolvedParams: {
+    university: string;
+    program: string;
+    scheme: string;
+    semester: string;
+}): { university: any, program: any, scheme: any, semester: any } | null {
+    const { university: universityId, program: programId, scheme: schemeId, semester: semesterId } = resolvedParams;
 
     const university = { id: universityId, name: capitalizeWords(universityId) };
     const universityData = directoryStructure[universityId];
@@ -76,23 +86,57 @@ const getSubjectCategory = (subjectCode: string) => {
 };
 
 
-export default async function SubjectsPage({ params }: SubjectsPageProps) {
-    let directoryStructure: DirectoryStructure | null = null;
-    let error: string | null = null;
+export default function SubjectsPage({ params }: SubjectsPageProps) {
+    const router = useRouter();
+    const resolvedParams = use(params);
+    const [directoryStructure, setDirectoryStructure] = useState<DirectoryStructure | null>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState(true);
+    const [loadingSubject, setLoadingSubject] = useState<string | null>(null);
 
-    try {
-      directoryStructure = await getDirectoryStructure();
-    } catch (e: any) {
-      console.error('Error fetching directory structure:', e);
-       error = 'Failed to load syllabus data.';
+    useEffect(() => {
+        async function fetchData() {
+            try {
+                const data = await getDirectoryStructure();
+                setDirectoryStructure(data);
+            } catch (e: any) {
+                console.error('Error fetching directory structure:', e);
+                setError('Failed to load syllabus data.');
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchData();
+    }, []);
+
+    const handleViewSyllabus = async (subjectId: string, subjectName: string) => {
+        setLoadingSubject(subjectId);
+        
+        // Add aesthetic delay for smooth UX
+        await new Promise(resolve => setTimeout(resolve, 700));
+        
+        router.push(`/${resolvedParams.university}/${resolvedParams.program}/${resolvedParams.scheme}/${resolvedParams.semester}/${subjectId}`);
+    };
+
+    if (loading) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-purple-50 via-white to-mint-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-800">
+                <Header />
+                <div className="flex items-center justify-center min-h-[60vh]">
+                    <div className="text-center">
+                        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+                        <p className="text-muted-foreground">Loading syllabus data...</p>
+                    </div>
+                </div>
+            </div>
+        );
     }
 
     if (error || !directoryStructure) {
         return <ErrorDisplay errorMessage={error || 'Could not fetch directory structure.'} />;
     }
 
-
-    const dataPath = findSemesterData(directoryStructure, params);
+    const dataPath = findSemesterData(directoryStructure, resolvedParams);
 
     if (!dataPath) {
       notFound();
@@ -130,26 +174,44 @@ export default async function SubjectsPage({ params }: SubjectsPageProps) {
                 <div className="grid justify-center grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 items-stretch max-w-[288px] mx-auto md:max-w-none md:mx-0">
                   {semester.subjects.map((subject: any) => {
                     const category = getSubjectCategory(subject.code);
+                    const isLoading = loadingSubject === subject.id;
                     return (
-                      <Link key={subject.id} href={`/${university.id}/${program.id}/${scheme.id}/${semester.id}/${subject.id}`}>
-                          <Card className="h-full w-72 overflow-hidden flex flex-col justify-between rounded-2xl hover:border-primary hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 bg-card/80 backdrop-blur-sm">
-                            <CardHeader>
-                                <div className="flex justify-between items-start">
-                                    <CardTitle className="text-xl pr-4 break-words w-44">{subject.name}</CardTitle>
-                                    <Badge variant="outline" className="flex items-center gap-1.5">
-                                        {category.icon}
-                                        {category.name}
-                                    </Badge>
-                                </div>
-                                <CardDescription>{subject.code}</CardDescription>
-                            </CardHeader>
-                            <CardFooter>
-                                <div className="flex items-center text-sm font-medium text-primary group">
-                                  View Syllabus <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                                </div>
-                            </CardFooter>
-                          </Card>
-                      </Link>
+                      <Card key={subject.id} className="h-full w-72 overflow-hidden flex flex-col justify-between rounded-2xl hover:border-primary hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 bg-card/80 backdrop-blur-sm">
+                        <CardHeader>
+                            <div className="flex justify-between items-start">
+                                <CardTitle className="text-xl pr-4 break-words w-44">{subject.name}</CardTitle>
+                                <Badge variant="outline" className="flex items-center gap-1.5">
+                                    {category.icon}
+                                    {category.name}
+                                </Badge>
+                            </div>
+                            <CardDescription>{subject.code}</CardDescription>
+                        </CardHeader>
+                        <CardFooter>
+                            <Button
+                                onClick={() => handleViewSyllabus(subject.id, subject.name)}
+                                disabled={isLoading}
+                                variant="ghost"
+                                className={`flex items-center text-sm font-medium text-primary group p-0 h-auto w-full justify-start transition-all duration-200 hover:bg-transparent ${
+                                  isLoading 
+                                    ? 'opacity-70 cursor-not-allowed animate-pulse' 
+                                    : 'hover:text-primary/80'
+                                }`}
+                            >
+                              {isLoading ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Loading...
+                                </>
+                              ) : (
+                                <>
+                                  View Syllabus
+                                  <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                </>
+                              )}
+                            </Button>
+                        </CardFooter>
+                      </Card>
                     )
                   })}
                 </div>

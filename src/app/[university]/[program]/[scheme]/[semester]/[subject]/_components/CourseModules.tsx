@@ -1,9 +1,10 @@
 "use client";
 
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { Sparkles, BrainCircuit } from 'lucide-react';
+import { Sparkles, BrainCircuit, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 interface Module {
@@ -18,13 +19,20 @@ interface CourseModulesProps {
 
 export function CourseModules({ modules }: CourseModulesProps) {
     const router = useRouter();
+    const [loadingModuleIndex, setLoadingModuleIndex] = useState<number | null>(null);
 
-    const handleChatRedirect = (module: Module) => {
+    const handleChatRedirect = async (module: Module, index: number) => {
         if (!module.content.trim()) {
             // Consider using a toast notification for a better UX
             alert('No content available for this module.');
             return;
         }
+        
+        setLoadingModuleIndex(index);
+        
+        // Add aesthetic delay for smooth UX
+        await new Promise(resolve => setTimeout(resolve, 600));
+        
         const title = module.title || "Selected Module";
         const content = module.content;
         router.push(`/chat?title=${encodeURIComponent(title)}&content=${encodeURIComponent(content)}`);
@@ -57,10 +65,22 @@ export function CourseModules({ modules }: CourseModulesProps) {
                                         <p className="text-muted-foreground whitespace-pre-wrap">{module.content.trim() || 'No detailed content available.'}</p>
                                     </div>
                                     <Button
-                                        onClick={() => handleChatRedirect(module)}
-                                        className="flex items-center gap-2 group"
+                                        onClick={() => handleChatRedirect(module, index)}
+                                        disabled={loadingModuleIndex === index}
+                                        className="flex items-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+                                        style={{
+                                            background: loadingModuleIndex === index 
+                                                ? 'linear-gradient(90deg, rgba(120,119,198,0.3) 0%, rgba(255,255,255,0.3) 50%, rgba(120,119,198,0.3) 100%)'
+                                                : undefined,
+                                            backgroundSize: loadingModuleIndex === index ? '1000px 100%' : undefined,
+                                            animation: loadingModuleIndex === index ? 'shimmer 2s infinite linear' : undefined
+                                        }}
                                     >
-                                        <Sparkles className="h-4 w-4 text-amber-300 transition-transform group-hover:scale-125" /> 
+                                        {loadingModuleIndex === index ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                        ) : (
+                                            <Sparkles className="h-4 w-4 text-amber-300 transition-transform group-hover:scale-125" />
+                                        )}
                                         Chat with AI about this Module
                                     </Button>
                                 </AccordionContent>

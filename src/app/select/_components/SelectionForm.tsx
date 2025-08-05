@@ -38,6 +38,7 @@ import {
   GraduationCap,
   Building,
   BookOpen,
+  Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -92,19 +93,40 @@ export function SelectionForm({ directoryStructure }: SelectionFormProps) {
     null
   );
   const [step, setStep] = useState(1);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
 
-  const handleUniversitySelect = (universityId: string) => {
+  const handleUniversitySelect = async (universityId: string) => {
+    setIsLoading(true);
+    setLoadingMessage('Loading programs...');
+    
+    // Add aesthetic delay for smooth transition
+    await new Promise(resolve => setTimeout(resolve, 800));
+    
     setSelectedUniversityId(universityId);
+    setIsLoading(false);
     setStep(2);
   };
 
-  const handleProgramSelect = (programId: string) => {
+  const handleProgramSelect = async (programId: string) => {
+    setIsLoading(true);
+    setLoadingMessage('Loading schemes...');
+    
+    await new Promise(resolve => setTimeout(resolve, 600));
+    
     setSelectedProgramId(programId);
+    setIsLoading(false);
     setStep(3);
   };
 
-  const handleSchemeSelect = (schemeId: string) => {
+  const handleSchemeSelect = async (schemeId: string) => {
+    setIsLoading(true);
+    setLoadingMessage('Loading semesters...');
+    
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
     setSelectedSchemeId(schemeId);
+    setIsLoading(false);
     setStep(4);
   };
 
@@ -143,17 +165,16 @@ export function SelectionForm({ directoryStructure }: SelectionFormProps) {
       ? selectedProgramData[selectedSchemeId]
       : null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (
-      selectedUniversityId &&
-      selectedProgramId &&
-      selectedSchemeId &&
-      selectedSemesterId
-    ) {
-      router.push(
-        `/${selectedUniversityId}/${selectedProgramId}/${selectedSchemeId}/${selectedSemesterId}`
-      );
+    if (selectedUniversityId && selectedProgramId && selectedSchemeId && selectedSemesterId) {
+      setIsLoading(true);
+      setLoadingMessage('Loading syllabus modules...');
+      
+      // Add a delay before navigation to show loading state
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      router.push(`/${selectedUniversityId}/${selectedProgramId}/${selectedSchemeId}/${selectedSemesterId}`);
     }
   };
 
@@ -168,8 +189,41 @@ export function SelectionForm({ directoryStructure }: SelectionFormProps) {
             Follow the steps to find the curriculum for your course.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-8 min-h-[300px] flex items-center justify-center">
+        <CardContent className="space-y-8 min-h-[400px] flex items-center justify-center">
           <AnimatePresence mode="wait">
+            {isLoading ? (
+              <MotionDiv 
+                key="loading" 
+                variants={stepVariants} 
+                initial="hidden" 
+                animate="visible" 
+                exit="exit" 
+                className="w-full text-center space-y-6"
+              >
+                <div className="relative">
+                  <div className="w-20 h-20 mx-auto mb-6 relative">
+                    <div className="absolute inset-0 rounded-full border-4 border-primary/20 animate-pulse"></div>
+                    <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-primary animate-spin"></div>
+                    <Loader2 className="w-8 h-8 text-primary absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-pulse" />
+                  </div>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: 0.2 }}
+                    className="space-y-2"
+                  >
+                    <h3 className="text-xl font-semibold text-primary">{loadingMessage}</h3>
+                    <p className="text-muted-foreground">Please wait while we prepare your content...</p>
+                    <div className="flex justify-center space-x-1 mt-4">
+                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce"></div>
+                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+                      <div className="w-2 h-2 bg-primary rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
+                    </div>
+                  </motion.div>
+                </div>
+              </MotionDiv>
+            ) : (
+              <>
             {step === 1 && (
               <MotionDiv
                 key="step1"
@@ -184,17 +238,26 @@ export function SelectionForm({ directoryStructure }: SelectionFormProps) {
                     1. Select Your University
                   </Label>
                   <div className="grid grid-cols-1 gap-4">
-                    {Object.keys(directoryStructure).map((universityId) => (
-                      <Card
+                    {Object.keys(directoryStructure).map(universityId => (
+                      <motion.div
                         key={universityId}
-                        className="cursor-pointer hover:border-primary transition-all p-4 text-center group hover:shadow-lg"
-                        onClick={() => handleUniversitySelect(universityId)}
+                        whileHover={{ scale: 1.02, y: -5 }}
+                        whileTap={{ scale: 0.98 }}
+                        transition={{ type: "spring", stiffness: 300, damping: 20 }}
                       >
-                        <GraduationCap className="h-8 w-8 text-primary mx-auto mb-2 transition-transform group-hover:scale-110" />
-                        <p className="font-semibold text-lg">
-                          {capitalizeWords(universityId)}
-                        </p>
-                      </Card>
+                        <Card
+                          className="cursor-pointer hover:border-primary transition-all duration-300 p-6 text-center group hover:shadow-xl hover:bg-primary/5 border-2 backdrop-blur-sm"
+                          onClick={() => handleUniversitySelect(universityId)}
+                        >
+                          <motion.div
+                            whileHover={{ rotate: 360 }}
+                            transition={{ duration: 0.6 }}
+                          >
+                            <GraduationCap className="h-12 w-12 text-primary mx-auto mb-3 transition-all duration-300 group-hover:text-primary/80" />
+                          </motion.div>
+                          <p className="font-semibold text-lg group-hover:text-primary transition-colors duration-300">{capitalizeWords(universityId)}</p>
+                        </Card>
+                      </motion.div>
                     ))}
                   </div>
                 </div>
@@ -330,6 +393,8 @@ export function SelectionForm({ directoryStructure }: SelectionFormProps) {
                   </RadioGroup>
                 </div>
               </MotionDiv>
+            )}
+            </>
             )}
           </AnimatePresence>
         </CardContent>
